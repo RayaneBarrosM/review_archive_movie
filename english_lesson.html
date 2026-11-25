@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARCHIVE // ECG Unit System</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hack-font@3.3.0/build/web/hack.css" />
+  <style>
+    :root {
+      --bg: #070b0a;
+      --panel: rgba(13, 21, 19, 0.84);
+      --panel-2: rgba(17, 28, 25, 0.9);
+      --border: #1d332d;
+      --text: #dcebe6;
+      --muted: #7f9c93;
+      --pulse: #26f7a8;
+      --pulse-soft: rgba(38, 247, 168, 0.24);
+      --pulse-dim: rgba(38, 247, 168, 0.13);
+      --alert: #ff4d6d;
+      --alert-dim: rgba(255, 77, 109, 0.16);
+      --warn: #f5b942;
+      --font-mono: 'Hack', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-mono);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 16px;
+      line-height: 1.55;
+      overflow-x: hidden;
+    }
+
+    /* Fullscreen Background ECG */
+    #bg-ecg-wrapper {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(38, 247, 168, 0.08), transparent 65%),
+        linear-gradient(to right, rgba(38, 247, 168, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(38, 247, 168, 0.04) 1px, transparent 1px),
+        #050908;
+      background-size: 100% 100%, 28px 28px, 28px 28px, 100% 100%;
+    }
+
+    canvas#ecgCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      opacity: 0.72;
+    }
+
+    /* Main Container above ECG */
+    .unit {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 820px;
+      background: var(--panel);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.75);
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 18px;
+      background: var(--panel-2);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .score-pill {
+      color: var(--text);
+    }
+
+    .bpm-pill {
+      color: var(--pulse);
+      font-weight: 700;
+    }
+
+    .bpm-pill.error {
+      color: var(--alert);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--pulse);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .status-badge.error {
+      color: var(--alert);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--pulse);
+      box-shadow: 0 0 10px var(--pulse);
+      animation: blink 1.2s infinite;
+    }
+
+    .status-badge.error .dot {
+      background: var(--alert);
+      box-shadow: 0 0 10px var(--alert);
+      animation: fast-blink 0.45s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.35; }
+    }
+
+    @keyframes fast-blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.15; }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* ================= START & LOADING SCREEN ================= */
+    .boot-screen {
+      padding: 46px 24px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      min-height: 360px;
+      justify-content: center;
+    }
+
+    .boot-tag {
+      font-size: 0.75rem;
+      color: var(--warn);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .boot-title {
+      font-size: 1.45rem;
+      margin: 0 0 10px;
+      color: var(--text);
+      letter-spacing: 0.03em;
+    }
+
+    .boot-subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+      max-width: 540px;
+      margin: 0 0 28px;
+    }
+
+    .primary-btn {
+      background: rgba(38, 247, 168, 0.12);
+      border: 1.5px solid var(--pulse);
+      color: var(--pulse);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 13px 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 22px rgba(38, 247, 168, 0.18);
+      transition: background 0.2s ease, transform 0.12s ease, box-shadow 0.2s ease;
+    }
+
+    .primary-btn:hover {
+      background: rgba(38, 247, 168, 0.22);
+      box-shadow: 0 0 28px rgba(38, 247, 168, 0.34);
+    }
+
+    .primary-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* 5-Block 3-Stage Loader */
+    .loader-wrapper {
+      width: 100%;
+      max-width: 540px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .blocks-row {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .load-block {
+      aspect-ratio: 4 / 5;
+      border-radius: 6px;
+      border: 1.5px solid #4a5e58;
+      background: rgba(10, 17, 15, 0.55);
+      transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .load-block.active {
+      background: var(--pulse-soft);
+      border-color: var(--pulse);
+      box-shadow: 0 0 16px rgba(38, 247, 168, 0.2);
+    }
+
+    .loading-caption {
+      font-size: 0.88rem;
+      color: var(--text);
+      letter-spacing: 0.02em;
+      min-height: 24px;
+    }
+
+    /* ================= QUIZ SCREEN ================= */
+    .content {
+      padding: 20px 18px 22px;
+    }
+
+    .robot-speech {
+      margin-bottom: 18px;
+      padding: 12px 14px;
+      border-left: 3px solid var(--pulse);
+      background: var(--pulse-dim);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.86rem;
+      color: var(--text);
+    }
+
+    .robot-speech.error {
+      border-left-color: var(--alert);
+      background: var(--alert-dim);
+    }
+
+    .robot-label {
+      display: block;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .progress-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .meta {
+      font-size: 0.75rem;
+      color: var(--warn);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .step-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .step-dot {
+      width: 18px;
+      height: 5px;
+      border-radius: 3px;
+      background: var(--border);
+      transition: background 0.25s ease;
+    }
+
+    .step-dot.current {
+      background: var(--warn);
+    }
+
+    .step-dot.done-ok {
+      background: var(--pulse);
+    }
+
+    .step-dot.done-err {
+      background: var(--alert);
+    }
+
+    .question {
+      font-size: 0.96rem;
+      margin: 0 0 18px;
+      color: var(--text);
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    button.option {
+      width: 100%;
+      text-align: left;
+      background: rgba(17, 28, 25, 0.82);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      padding: 13px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.18s ease, background 0.18s ease, transform 0.1s ease;
+    }
+
+    button.option:hover:not(:disabled) {
+      border-color: var(--pulse);
+      background: rgba(38, 247, 168, 0.09);
+    }
+
+    button.option:active:not(:disabled) {
+      transform: scale(0.995);
+    }
+
+    button.option:disabled {
+      cursor: default;
+      opacity: 0.88;
+    }
+
+    button.option.correct {
+      border-color: var(--pulse);
+      background: rgba(38, 247, 168, 0.18);
+      opacity: 1;
+    }
+
+    button.option.wrong {
+      border-color: var(--alert);
+      background: rgba(255, 77, 109, 0.2);
+      opacity: 1;
+    }
+
+    .opt-key {
+      color: var(--pulse);
+      font-weight: 700;
+      margin-right: 8px;
+    }
+
+    button.option.wrong .opt-key {
+      color: var(--alert);
+    }
+
+    .footer-bar {
+      margin-top: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 38px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .feedback-note {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .actions-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button.secondary-btn {
+      background: rgba(13, 21, 19, 0.75);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      padding: 8px 13px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button.secondary-btn:hover {
+      border-color: var(--pulse);
+      color: var(--pulse);
+    }
+
+    button.next-btn {
+      background: rgba(38, 247, 168, 0.14);
+      border: 1px solid var(--pulse);
+      color: var(--pulse);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 8px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button.next-btn:hover {
+      background: rgba(38, 247, 168, 0.24);
+    }
+
+    /* ================= SUMMARY SCREEN ================= */
+    .summary-screen {
+      padding: 32px 22px 34px;
+      text-align: center;
+    }
+
+    .summary-score {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--pulse);
+      margin: 6px 0 14px;
+    }
+
+    .summary-score.low {
+      color: var(--alert);
+    }
+
+    .summary-quote {
+      max-width: 620px;
+      margin: 0 auto 24px;
+      padding: 14px 16px;
+      border-left: 3px solid var(--pulse);
+      background: var(--pulse-dim);
+      border-radius: 0 8px 8px 0;
+      text-align: left;
+      font-size: 0.86rem;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <!-- Background ECG Monitor -->
+  <div id="bg-ecg-wrapper" aria-hidden="true">
+    <canvas id="ecgCanvas"></canvas>
+  </div>
+
+  <main class="unit">
+    <div class="topbar">
+      <span>ARCHIVE-BOT-ECG</span>
+      <div class="topbar-right">
+        <span id="scoreDisplay" class="score-pill hidden">SCORE: 0/5</span>
+        <span>HR: <span id="bpmValue" class="bpm-pill">72 BPM</span></span>
+        <span id="statusBadge" class="status-badge">
+          <span class="dot"></span>
+          <span id="statusText">SIGNAL: STANDBY</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- SCREEN 1: START + 3-STAGE LOADING -->
+    <section id="bootScreen" class="boot-screen">
+      <div id="startState">
+        <div class="boot-tag">ARCHIVE INTERFACE // NEURAL &amp; CARDIAC LOG</div>
+        <h1 class="boot-title">MEMORY &amp; PROTOTYPE DIAGNOSTIC</h1>
+        <p class="boot-subtitle">
+          Initialize the telemetry monitor to evaluate 5 neural logs on <em>Archive</em> (2020).
+        </p>
+        <button id="startBtn" class="primary-btn" type="button">START</button>
+      </div>
+
+      <div id="loadingState" class="loader-wrapper hidden">
+        <div class="blocks-row" id="blocksRow">
+          <div class="load-block"></div>
+          <div class="load-block"></div>
+          <div class="load-block"></div>
+          <div class="load-block"></div>
+          <div class="load-block"></div>
+        </div>
+        <div id="loadingCaption" class="loading-caption">Loading initiated...</div>
+      </div>
+    </section>
+
+    <!-- SCREEN 2: QUIZ DIAGNOSTIC -->
+    <section id="quizScreen" class="content hidden">
+      <div id="robotSpeech" class="robot-speech">
+        <span class="robot-label">ECG BOT RESPONSE</span>
+        <span id="robotText">Monitoring active. Select an answer to begin the diagnostic.</span>
+      </div>
+
+      <div class="progress-row">
+        <div id="questionMeta" class="meta">ARCHIVE (2020) // MODULE 01 — DATA VS. ESSENCE</div>
+        <div id="stepDots" class="step-dots"></div>
+      </div>
+
+      <p id="questionText" class="question"></p>
+
+      <div class="options" id="optionsContainer"></div>
+
+      <div class="footer-bar">
+        <span id="feedbackNote" class="feedback-note">Awaiting input...</span>
+        <div class="actions-group">
+          <button id="restartBtn" class="secondary-btn" type="button">RESTART</button>
+          <button id="nextBtn" class="next-btn hidden" type="button">NEXT LOG &rarr;</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 3: FINAL DIAGNOSTIC SUMMARY -->
+    <section id="summaryScreen" class="summary-screen hidden">
+      <div class="boot-tag">SESSION COMPLETE // TELEMETRY REPORT</div>
+      <div id="finalScore" class="summary-score">5 / 5</div>
+      <div id="finalQuote" class="summary-quote"></div>
+      <button id="playAgainBtn" class="primary-btn" type="button">REBOOT DIAGNOSTIC</button>
+    </section>
+  </main>
+
+  <script>
+    const QUESTIONS = [
+      {
+        meta: "QUESTION 01/05 // DATA VS. ESSENCE",
+        prompt: "In the film and in today's reflection on AI, what happens when we try to \"resurrect\" someone using only recorded data, images, voice, and memories?",
+        options: {
+          A: "The real person comes back exactly as they were, with their free will intact.",
+          B: "We create a reconstruction or idealization shaped by the one who remembers—not the living essence of the person.",
+          C: "The machine automatically erases all painful memories from those left behind."
+        },
+        correct: "B",
+        idleSpeech: "Telemetry locked on Module 01. Distinguish raw data storage from human essence.",
+        correctSpeech: "Steady pulse. Signal confirmed: you separated stored data from living human essence.",
+        wrongSpeech: "Arrhythmia alert! Noise in the reading: nostalgia distorted your diagnosis.",
+        correctNote: "Correct. Technology stores data, not human essence—creating an edited idealization.",
+        wrongNote: "Incorrect. Recorded data produces an idealized reflection, not the real person."
+      },
+      {
+        meta: "QUESTION 02/05 // THE PROTOTYPE TRAIL (J1, J2, J3)",
+        prompt: "In Archive (2020), the transition between prototypes J2 and J3 exposes tensions beyond simple hardware progression. Considering what happens to J2 across the story, what decisively marks this contrast before the finale?",
+        options: {
+          A: "J2 already has a voice and emotional reactions of her own, but breaks down upon J3's arrival and the realization that she will no longer be the center of attention or move past her current stage—ending up sinking in the water, while J3 advances as the closest model to human form.",
+          B: "J2 already has a voice and emotional reactions of her own, but breaks down only after receiving the full upload of Jules's consciousness, while J3 is discarded in the water because she cannot move without external support from the pod.",
+          C: "J2 already has a voice and emotional reactions of her own, but is permanently shut down by George early in the project to salvage her internal frame, while J3 enters the water during a sealing test before taking on a voice."
+        },
+        correct: "A",
+        idleSpeech: "Scanning prototype logs J1 through J3. Pay close attention to sequence and causality.",
+        correctSpeech: "Steady pulse. You didn't fall for the signal distortion: it was indeed J2 who couldn't bear the space opened by J3.",
+        wrongSpeech: "False reading! The trace looked familiar, but you swapped the log facts. Re-evaluate what happened to J2.",
+        correctNote: "Correct. Option [A] matches J2's emotional conflict, J3's progression, and J2's fate in the water.",
+        wrongNote: "Incorrect. Similar phrasing, different sequence/causality—review J2's arc in the film."
+      },
+      {
+        meta: "QUESTION 03/05 // THE LIMIT OF \"ARCHIVE\"",
+        prompt: "Within the universe of Archive, what is the central logic behind the consciousness preservation device/system?",
+        options: {
+          A: "It guarantees unlimited eternal life inside the laboratory with no expiration deadline.",
+          B: "It functions as a temporary retention and simulation space with a limited timeframe before final shutdown and burial.",
+          C: "It is designed solely to wipe outdated files from corporate mainframe computers."
+        },
+        correct: "B",
+        idleSpeech: "Checking system timer parameters. Identify the true purpose of the Archive unit.",
+        correctSpeech: "Normalized frequency. Your answer aligns with the system's core architecture.",
+        wrongSpeech: "Voltage spike on the line... Incorrect reading. The Archive was never built for eternity.",
+        correctNote: "Correct. Archive provides a finite window to communicate before final disconnection.",
+        wrongNote: "Incorrect. The device is temporary by design, preceding final closure."
+      },
+      {
+        meta: "QUESTION 04/05 // THE PLOT TWIST & GRIEF",
+        prompt: "What is the major final plot twist of the film that completely reframes everything that seemed to be happening?",
+        options: {
+          A: "It is revealed that George was the one inside the Archive after the crash, while Jules and their daughter had survived in the real world.",
+          B: "George and Jules escape together to another country without any emotional conflict.",
+          C: "The laboratory never existed and the entire story was just a television commercial."
+        },
+        correct: "A",
+        idleSpeech: "Deep memory layer reached. Decrypting the core anomaly behind the simulation.",
+        correctSpeech: "Constant rhythm. You looked past the surface of the screen and saw who was truly trapped.",
+        wrongSpeech: "Oscillation detected. You mistook the projection inside the mind for external reality.",
+        correctNote: "Correct. George died in the accident; the entire scenario was his dying mind inside the Archive.",
+        wrongNote: "Incorrect. The twist reveals George was the one inside the Archive unit all along."
+      },
+      {
+        meta: "QUESTION 05/05 // REAL-WORLD IMPACT",
+        prompt: "When technology or AI \"brings back\" the faces, voices, or personalities of those who have passed away, what is one of the main ethical and emotional effects in the real world?",
+        options: {
+          A: "It completely eliminates the grieving process for families and fans.",
+          B: "It raises questions about posthumous consent and rights, and can trap those left behind in nostalgia instead of helping them say goodbye.",
+          C: "It makes any reflection on privacy or personal data completely unnecessary."
+        },
+        correct: "B",
+        idleSpeech: "Final diagnostic log. Connecting fictional simulation to real-world AI ethics.",
+        correctSpeech: "Signal locked. Digital resurrection does not save those we love—it risks locking us inside nostalgia.",
+        wrongSpeech: "Critical arrhythmia! Ethical boundary missed: simulation cannot replace genuine closure.",
+        correctNote: "Correct. Posthumous rights and prolonged grief are central ethical concerns.",
+        wrongNote: "Incorrect. AI reconstructions raise serious consent issues and can prolong grief."
+      }
+    ];
+
+    const LOADING_STAGES = [
+      { activeBlocks: 2, text: "Loading initiated...", status: "BOOT: STAGE 1/3", bpm: "76 BPM" },
+      { activeBlocks: 3, text: "Connecting data, memory and heartbeat...", status: "BOOT: STAGE 2/3", bpm: "84 BPM" },
+      { activeBlocks: 5, text: "Starting...", status: "BOOT: STAGE 3/3", bpm: "78 BPM" }
+    ];
+
+    const canvas = document.getElementById("ecgCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const bootScreen = document.getElementById("bootScreen");
+    const startState = document.getElementById("startState");
+    const loadingState = document.getElementById("loadingState");
+    const startBtn = document.getElementById("startBtn");
+    const loadBlocks = Array.from(document.querySelectorAll(".load-block"));
+    const loadingCaption = document.getElementById("loadingCaption");
+
+    const quizScreen = document.getElementById("quizScreen");
+    const summaryScreen = document.getElementById("summaryScreen");
+
+    const scoreDisplay = document.getElementById("scoreDisplay");
+    const statusBadge = document.getElementById("statusBadge");
+    const statusText = document.getElementById("statusText");
+    const bpmValue = document.getElementById("bpmValue");
+    const robotSpeech = document.getElementById("robotSpeech");
+    const robotText = document.getElementById("robotText");
+
+    const questionMeta = document.getElementById("questionMeta");
+    const stepDots = document.getElementById("stepDots");
+    const questionText = document.getElementById("questionText");
+    const optionsContainer = document.getElementById("optionsContainer");
+    const feedbackNote = document.getElementById("feedbackNote");
+    const restartBtn = document.getElementById("restartBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    const finalScore = document.getElementById("finalScore");
+    const finalQuote = document.getElementById("finalQuote");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+
+    let currentIdx = 0;
+    let score = 0;
+    let results = []; // "ok" | "err"
+    let waveMode = "normal"; // "normal" | "error"
+    let phase = 0;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function ecgSample(xNorm, mode) {
+      if (mode === "error") {
+        const p = Math.exp(-Math.pow((xNorm - 0.14) / 0.035, 2)) * 0.22;
+        const q = -Math.exp(-Math.pow((xNorm - 0.23) / 0.015, 2)) * 0.35;
+        const r = Math.exp(-Math.pow((xNorm - 0.27) / 0.016, 2)) * 1.05;
+        const s = -Math.exp(-Math.pow((xNorm - 0.31) / 0.018, 2)) * 0.55;
+        const t = Math.exp(-Math.pow((xNorm - 0.52) / 0.055, 2)) * 0.32;
+        const jitter = Math.sin(xNorm * 95) * 0.08;
+        return -(p + q + r + s + t) + jitter;
+      }
+
+      const p = Math.exp(-Math.pow((xNorm - 0.18) / 0.04, 2)) * 0.18;
+      const q = -Math.exp(-Math.pow((xNorm - 0.28) / 0.015, 2)) * 0.22;
+      const r = Math.exp(-Math.pow((xNorm - 0.31) / 0.015, 2)) * 0.88;
+      const s = -Math.exp(-Math.pow((xNorm - 0.34) / 0.018, 2)) * 0.36;
+      const t = Math.exp(-Math.pow((xNorm - 0.56) / 0.065, 2)) * 0.26;
+      return -(p + q + r + s + t);
+    }
+
+    function drawEcg() {
+      const w = canvas.width;
+      const h = canvas.height;
+      const midY = h * 0.52;
+      const amp = Math.min(h * 0.24, 155);
+
+      ctx.fillStyle = "rgba(5, 9, 8, 0.22)";
+      ctx.fillRect(0, 0, w, h);
+
+      const speed = waveMode === "error" ? 0.022 : 0.011;
+      const beatSpan = waveMode === "error" ? 190 : 280;
+
+      ctx.beginPath();
+      ctx.lineWidth = 2.4;
+      ctx.strokeStyle = waveMode === "error" ? "#ff4d6d" : "#26f7a8";
+      ctx.shadowColor = waveMode === "error" ? "#ff4d6d" : "#26f7a8";
+      ctx.shadowBlur = 12;
+
+      for (let x = 0; x <= w; x += 2) {
+        const cyclePos = (((x + phase * 180) % beatSpan) + beatSpan) % beatSpan / beatSpan;
+        const y = midY + ecgSample(cyclePos, waveMode) * amp;
+        if (x === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      phase += speed;
+      requestAnimationFrame(drawEcg);
+    }
+
+    function setTelemetry({ status, bpm, mode, speech, note }) {
+      waveMode = mode;
+      statusText.textContent = status;
+      bpmValue.textContent = bpm;
+      if (speech !== undefined) robotText.textContent = speech;
+      if (note !== undefined) feedbackNote.textContent = note;
+
+      const isErr = mode === "error";
+      statusBadge.classList.toggle("error", isErr);
+      bpmValue.classList.toggle("error", isErr);
+      robotSpeech.classList.toggle("error", isErr);
+    }
+
+    function renderDots() {
+      stepDots.innerHTML = "";
+      QUESTIONS.forEach((_, idx) => {
+        const dot = document.createElement("span");
+        dot.className = "step-dot";
+        if (results[idx] === "ok") {
+          dot.classList.add("done-ok");
+        } else if (results[idx] === "err") {
+          dot.classList.add("done-err");
+        } else if (idx === currentIdx) {
+          dot.classList.add("current");
+        }
+        stepDots.appendChild(dot);
+      });
+    }
+
+    function renderQuestion() {
+      const q = QUESTIONS[currentIdx];
+      questionMeta.textContent = q.meta;
+      questionText.textContent = q.prompt;
+      nextBtn.classList.add("hidden");
+      nextBtn.textContent = currentIdx === QUESTIONS.length - 1 ? "FINISH DIAGNOSTIC →" : "NEXT LOG →";
+
+      setTelemetry({
+        status: "SIGNAL: STEADY",
+        bpm: "72 BPM",
+        mode: "normal",
+        speech: q.idleSpeech,
+        note: "Awaiting input..."
+      });
+
+      renderDots();
+      optionsContainer.innerHTML = "";
+
+      Object.entries(q.options).forEach(([key, label]) => {
+        const btn = document.createElement("button");
+        btn.className = "option";
+        btn.type = "button";
+        btn.dataset.choice = key;
+        btn.innerHTML = `<span class="opt-key">[${key}]</span>${label}`;
+        btn.addEventListener("click", () => handleChoice(key, btn));
+        optionsContainer.appendChild(btn);
+      });
+    }
+
+    function handleChoice(chosenKey, clickedBtn) {
+      const q = QUESTIONS[currentIdx];
+      const allButtons = Array.from(optionsContainer.querySelectorAll(".option"));
+
+      allButtons.forEach((b) => {
+        b.disabled = true;
+      });
+
+      if (chosenKey === q.correct) {
+        clickedBtn.classList.add("correct");
+        score += 1;
+        results[currentIdx] = "ok";
+        scoreDisplay.textContent = `SCORE: ${score}/${QUESTIONS.length}`;
+
+        setTelemetry({
+          status: "SIGNAL: LOCKED",
+          bpm: "74 BPM",
+          mode: "normal",
+          speech: q.correctSpeech,
+          note: q.correctNote
+        });
+      } else {
+        clickedBtn.classList.add("wrong");
+        const correctBtn = allButtons.find((b) => b.dataset.choice === q.correct);
+        if (correctBtn) correctBtn.classList.add("correct");
+        results[currentIdx] = "err";
+
+        setTelemetry({
+          status: "ARRHYTHMIA DETECTED",
+          bpm: "138 BPM",
+          mode: "error",
+          speech: q.wrongSpeech,
+          note: q.wrongNote
+        });
+      }
+
+      renderDots();
+      nextBtn.classList.remove("hidden");
+    }
+
+    function showSummary() {
+      quizScreen.classList.add("hidden");
+      summaryScreen.classList.remove("hidden");
+
+      const passed = score >= 4;
+      finalScore.textContent = `${score} / ${QUESTIONS.length}`;
+      finalScore.classList.toggle("low", !passed);
+
+      if (passed) {
+        setTelemetry({
+          status: "SESSION: COMPLETE",
+          bpm: "70 BPM",
+          mode: "normal"
+        });
+        finalQuote.textContent =
+          "Session closed. The monitor may power down, yet the question remains: what are we trying to keep alive—the person, or our own longing for them?";
+      } else {
+        setTelemetry({
+          status: "SIGNAL: UNSTABLE",
+          bpm: "118 BPM",
+          mode: "error"
+        });
+        finalQuote.textContent =
+          "Session closed with signal interference. Digital resurrection does not save those we love; it only traps us inside our own nostalgia. Reboot to recalibrate.";
+      }
+    }
+
+    function startQuizSession() {
+      currentIdx = 0;
+      score = 0;
+      results = [];
+      scoreDisplay.textContent = `SCORE: 0/${QUESTIONS.length}`;
+      scoreDisplay.classList.remove("hidden");
+
+      bootScreen.classList.add("hidden");
+      summaryScreen.classList.add("hidden");
+      quizScreen.classList.remove("hidden");
+      renderQuestion();
+    }
+
+    function runLoadingSequence() {
+      startState.classList.add("hidden");
+      loadingState.classList.remove("hidden");
+
+      LOADING_STAGES.forEach((stage, index) => {
+        setTimeout(() => {
+          loadBlocks.forEach((block, i) => {
+            block.classList.toggle("active", i < stage.activeBlocks);
+          });
+          loadingCaption.textContent = stage.text;
+          statusText.textContent = stage.status;
+          bpmValue.textContent = stage.bpm;
+        }, index * 1100);
+      });
+
+      setTimeout(() => {
+        startQuizSession();
+      }, LOADING_STAGES.length * 1100);
+    }
+
+    startBtn.addEventListener("click", runLoadingSequence);
+
+    nextBtn.addEventListener("click", () => {
+      if (currentIdx < QUESTIONS.length - 1) {
+        currentIdx += 1;
+        renderQuestion();
+      } else {
+        showSummary();
+      }
+    });
+
+    restartBtn.addEventListener("click", startQuizSession);
+    playAgainBtn.addEventListener("click", startQuizSession);
+
+    drawEcg();
+  </script>
+</body>
+</html>
