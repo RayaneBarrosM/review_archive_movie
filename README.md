@@ -2,6 +2,7 @@
 To access the site you only need to click on: https://rayanebarrosm.github.io/review_archive_movie/index.html
 
 ## What is our application?
+
 The site is a quiz about the movie, representing our view of its philosophy. We hope you like it!
 ---
 ## Script of the video
