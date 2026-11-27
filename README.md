@@ -2,9 +2,8 @@
 To access the site you only need to click on: https://rayanebarrosm.github.io/review_archive_movie/index.html
 
 ## What is our application?
+The site is a quiz about the movie, representing our view of its philosophy. We hope you like it!
 
- The site is a quiz about the movie, representing our view of its philosophy. We hope you like it!
----
 ## Script of the video
 
 But would it be possible to resurrect someone through technology? Hollywood has proven that it is for a long time, giving us the opportunity to see famous personalities like Carrie Fisher and Paul Walker again. However, something that caused controversy was the “resurrection” of a Brazilian singer Elis Regina for a commercial, which uses the same method used to create deepfakes, where a person’s face is mapped and superimposed onto someone else's face with the help of AI.
