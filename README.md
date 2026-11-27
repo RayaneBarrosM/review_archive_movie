@@ -1,1 +1,16 @@
-# review_archive_movie
+#Script of the video
+
+But would it be possible to resurrect someone through technology? Hollywood has proven that it is for a long time, giving us the opportunity to see famous personalities like Carrie Fisher e Paul Walker again. However, something that caused controversy was the “resurrection” of a Brazilian singer Elis Regina for a commercial, which uses the same method used to create deepfakes, where a person’s face is mapped and superimposed onto someone’s else face with the help of AI.
+
+In the film George sees Julie on a screen and believes she is alive inside it, which leads us to think about what the real world effects would be if artificial intelligence “resurrect” people.
+ 
+Today we see that AI knows so much about us due to massive data collection, as many people find themselves dependent on it in various aspects of life. This make it easier to reproduce our voices, the way that we speak and images, like in the film where the machine is fed with footage of their memories.
+
+This leads us to think about the rights of deceased people;  for example, would they want to be portrayed like this? Is this experience capable of creating a sense of a person being genuinely replaced by a machine?
+
+A IA pode realmente trazer alguém de volta ou apenas cria uma idealização? J3 tem o rosto, a voz e as memórias reconstruídas de Jules, mas J3 nunca foi Jules. Ela foi um eco desenhado pelo luto — um espelho refletindo apenas o que George queria lembrar, não quem ela realmente era. A tecnologia armazena dados, não a essência humana. George não restaurou sua esposa; ele construiu uma fantasia editada, sem falhas ou livre-arbítrio — tanto que descartou J2 assim que ela desenvolveu sentimentos próprios. E com a reviravolta final, como George era quem estava preso no Archive, J3 nem sequer é real: ela é uma alucinação dentro de uma mente moribunda. No fim, a ressurreição digital não salva quem amamos; ela apenas nos aprisiona na nossa própria nostalgia.
+
+Throughout the entire film, we believe we are watching the journey of a brilliant scientist trying to defeat death. George isolates himself from the world, builds three generations of robots, and risks everything for one single goal: bringing Julie back. But Archive is not about technological evolution. It is about the refusal to accept the end. 
+The truth is that George never processed the accident. Even inside the Archive simulation, his consciousness fabricated an entire scenario where he was the survivor trying to save her. He was simply incapable of seeing himself existing in a world without Julie. For George's mind, staying 'alive' meant finding a way to have her back.
+When the big plot twist happens and we discover that it was actually George who died in the crash, the weight of grief shifts, yet remains shared. In the real world, Julie survived and must face the hardest moment of all: saying a final goodbye and moving on for the sake of their daughter. Meanwhile, in the virtual world, once the truth is revealed, George refuses to leave alone and takes the simulated version of Julie—J3—with him into the dark. 
+Archive shows us that grief can become a comfortable prison—both for those left behind who must find the courage to say goodbye, and for the memory of someone clinging to what was lost. Ultimately, the film's greatest tragedy isn't the fatal accident itself, but their mutual inability to accept separation and let each other go. 
