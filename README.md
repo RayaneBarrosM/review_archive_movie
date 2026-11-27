@@ -1,4 +1,8 @@
-#Script of the video
+## How to access our site
+
+
+---
+## Script of the video
 
 But would it be possible to resurrect someone through technology? Hollywood has proven that it is for a long time, giving us the opportunity to see famous personalities like Carrie Fisher e Paul Walker again. However, something that caused controversy was the “resurrection” of a Brazilian singer Elis Regina for a commercial, which uses the same method used to create deepfakes, where a person’s face is mapped and superimposed onto someone’s else face with the help of AI.
 
