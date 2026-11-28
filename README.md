@@ -7,7 +7,8 @@ The site is a quiz about the movie, representing our view of its philosophy. We 
 ## Collaborators
 - [Ana Beatriz de Oliveira Alves](https://github.com/ana-bia07)
 - [Gustavo dos Santos Rocha](https://github.com/GustaHxH)
-- [Leonardo Pereira Braga ](https://github.com/LeonardoPereiraBraga)
+- [Leonardo Pereira Braga](https://github.com/LeonardoPereiraBraga)
+- [Rayane Barros Mendes](https://github.com/RayaneBarrosM)
 
 
 ## Script of the video
