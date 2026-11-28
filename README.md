@@ -5,11 +5,9 @@ To access the site you only need to click on: https://rayanebarrosm.github.io/re
 The site is a quiz about the movie, representing our view of its philosophy. We hope you like it!
 
 ## Collaborators
-[@Ana Beatriz de Oliveira Alves](https://github.com/ana-bia07)
-
-[@Gustavo dos Santos Rocha](https://github.com/GustaHxH)
-
-[@Leonardo Pereira Braga ](https://github.com/LeonardoPereiraBraga)
+- [Ana Beatriz de Oliveira Alves](https://github.com/ana-bia07)
+- [Gustavo dos Santos Rocha](https://github.com/GustaHxH)
+- [Leonardo Pereira Braga ](https://github.com/LeonardoPereiraBraga)
 
 
 ## Script of the video
